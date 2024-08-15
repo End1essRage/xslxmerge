@@ -3,7 +3,6 @@ package main
 type ColumnParam struct {
 	Id       int
 	Required bool
-	//format
 }
 
 // id столбца + имя

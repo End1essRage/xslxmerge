@@ -34,20 +34,6 @@ func (params *ReadCommand) ReadRows(ch chan<- Row, wg *sync.WaitGroup) {
 		}
 	}()
 
-	if len(params.Params) < 1 {
-		//Переделать на заполнение params по колву столбоц в хедере и реализовать вывод с первым столбцом
-		cols, err := GetAllHeaders(params.FilePath, params.SheetName)
-		if err != nil {
-			logrus.Error(err)
-		}
-		logrus.Info(cols)
-		newParams := make([]ColumnParam, 0)
-		for id := range cols {
-			newParams = append(newParams, ColumnParam{Id: id})
-		}
-		logrus.Info(newParams)
-		params.Params = newParams
-	}
 	logrus.Info(len(params.Params))
 	filledCells := params.fillCellsMap(f)
 	params.sendRow(ch, filledCells)
@@ -69,20 +55,6 @@ func (params *ReadCommand) ReadRowsSync() ([]Row, error) {
 
 	result := make([]Row, 0)
 
-	if len(params.Params) < 1 {
-		cols, err := GetAllHeaders(params.FilePath, params.SheetName)
-		if err != nil {
-			logrus.Error(err)
-		}
-		logrus.Info(cols)
-		newParams := make([]ColumnParam, 0)
-		for id := range cols {
-			newParams = append(newParams, ColumnParam{Id: id})
-		}
-		logrus.Info(newParams)
-		params.Params = newParams
-
-	}
 	filledCells := params.fillCellsMap(f)
 	for i := 2; i < params.EndRow; i++ {
 		row, err := params.getRow(i, filledCells)
