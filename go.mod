@@ -1,4 +1,4 @@
-module end1essrage/xslxmerge
+module github.com/end1essrage/xslxmerge
 
 go 1.22.5
 
