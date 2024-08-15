@@ -35,7 +35,6 @@ func (params *ReadCommand) ReadRows(ch chan<- Row, wg *sync.WaitGroup) {
 	}()
 
 	if len(params.Params) < 1 {
-		logrus.Info("no params")
 		//Переделать на заполнение params по колву столбоц в хедере и реализовать вывод с первым столбцом
 		cols, err := GetAllHeaders(params.FilePath, params.SheetName)
 		if err != nil {
@@ -71,25 +70,26 @@ func (params *ReadCommand) ReadRowsSync() ([]Row, error) {
 	result := make([]Row, 0)
 
 	if len(params.Params) < 1 {
-		rows, err := f.GetRows(params.SheetName)
+		cols, err := GetAllHeaders(params.FilePath, params.SheetName)
 		if err != nil {
 			logrus.Error(err)
-			return nil, err
 		}
+		logrus.Info(cols)
+		newParams := make([]ColumnParam, 0)
+		for id := range cols {
+			newParams = append(newParams, ColumnParam{Id: id})
+		}
+		logrus.Info(newParams)
+		params.Params = newParams
 
-		for id, row := range rows[1:] {
-			result = append(result, Row{id + 2: row})
+	}
+	filledCells := params.fillCellsMap(f)
+	for i := 2; i < params.EndRow; i++ {
+		row, err := params.getRow(i, filledCells)
+		if err != nil {
+			continue
 		}
-
-	} else {
-		filledCells := params.fillCellsMap(f)
-		for i := 2; i < params.EndRow; i++ {
-			row, err := params.getRow(i, filledCells)
-			if err != nil {
-				continue
-			}
-			result = append(result, Row{i: row})
-		}
+		result = append(result, Row{i: row})
 	}
 
 	if len(result) > 0 {
@@ -174,7 +174,7 @@ func (params *ReadCommand) sendRow(ch chan<- Row, filledCells map[string]string)
 				skip = true
 			}
 
-			row[j] = filledCells[cellRef]
+			row[params.Params[j].Id] = filledCells[cellRef]
 		}
 
 		if !skip {
@@ -183,8 +183,8 @@ func (params *ReadCommand) sendRow(ch chan<- Row, filledCells map[string]string)
 	}
 }
 
-func (params *ReadCommand) getRow(i int, filledCells map[string]string) ([]string, error) {
-	row := make([]string, 0)
+func (params *ReadCommand) getRow(i int, filledCells map[string]string) (map[int]string, error) {
+	row := make(map[int]string)
 
 	skip := false
 	for j := 0; j < len(params.Params); j++ {
@@ -194,7 +194,7 @@ func (params *ReadCommand) getRow(i int, filledCells map[string]string) ([]strin
 			skip = true
 		}
 
-		row = append(row, filledCells[cellRef])
+		row[params.Params[j].Id] = filledCells[cellRef]
 	}
 
 	if !skip {
