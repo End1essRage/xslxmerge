@@ -5,26 +5,15 @@ type ColumnParam struct {
 	Required bool
 }
 
-// id столбца + имя
-type Headers map[int]string
-type NewHeaders []NewCell
+type Headers []Cell
 
-/*
-// номер строки + набор данных
-type Rows map[int]RowData
-
-// номер столбца + данные ячейки
-type RowData map[int]string
-*/
-type NewRows []NewRow
-
-type NewCell struct {
+type Cell struct {
 	ColumnId int
 	Data     string
 }
 
-type NewRow struct {
+type Row struct {
 	Id    int
 	Empty bool
-	Data  []NewCell
+	Data  []Cell
 }

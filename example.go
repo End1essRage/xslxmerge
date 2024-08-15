@@ -13,7 +13,7 @@ func example() {
 	logrus.Info("READ FILE")
 	var wga sync.WaitGroup
 
-	cha := make(chan NewRow)
+	cha := make(chan Row)
 	fa := NewReadFascade("docs/моя.xlsx", "TDSheet")
 
 	paramsa, err := fa.NewReadFull()
@@ -49,7 +49,7 @@ func example() {
 	logrus.Info("READ FILE")
 	var wg sync.WaitGroup
 
-	ch := make(chan NewRow)
+	ch := make(chan Row)
 	f := NewReadFascade("docs/моя.xlsx", "TDSheet")
 	colParams := make([]ColumnParam, 0)
 	colParams = append(colParams, ColumnParam{Id: 0, Required: true})

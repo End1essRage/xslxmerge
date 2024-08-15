@@ -21,7 +21,7 @@ func GetAllHeaders(filePath string, sheetName string) (Headers, error) {
 		}
 	}()
 
-	result := make(Headers)
+	result := make(Headers, 0)
 	counter := 0
 	for {
 		cellRef := fmt.Sprintf("%s%d", string('A'+counter), 1)
@@ -33,7 +33,8 @@ func GetAllHeaders(filePath string, sheetName string) (Headers, error) {
 		if cellValue == "" {
 			break
 		}
-		result[counter] = cellValue
+		cell := Cell{ColumnId: counter, Data: cellValue}
+		result = append(result, cell)
 
 		counter++
 	}
@@ -55,9 +56,9 @@ func GetHeaders(filePath string, sheetName string, colIds []int) (Headers, error
 		}
 	}()
 
-	result := make(Headers)
+	result := make(Headers, 0)
 
-	for col := range colIds {
+	for _, col := range colIds {
 		cellRef := fmt.Sprintf("%s%d", string('A'+col), 1)
 		cellValue, err := f.GetCellValue(sheetName, cellRef)
 		if err != nil {
@@ -68,7 +69,8 @@ func GetHeaders(filePath string, sheetName string, colIds []int) (Headers, error
 			cellValue = emptyValue
 		}
 
-		result[col] = cellValue
+		cell := Cell{ColumnId: col, Data: cellValue}
+		result = append(result, cell)
 	}
 
 	return result, nil
