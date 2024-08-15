@@ -1,4 +1,4 @@
-package main
+package xslxmerge
 
 type ReadFascade struct {
 	filePath  string
