@@ -7,7 +7,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func GetAllHeaders(filePath string, sheetName string) (Columns, error) {
+func GetAllHeaders(filePath string, sheetName string) (Headers, error) {
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		logrus.Error(err)
@@ -21,7 +21,7 @@ func GetAllHeaders(filePath string, sheetName string) (Columns, error) {
 		}
 	}()
 
-	result := make(Columns)
+	result := make(Headers)
 	counter := 0
 	for {
 		cellRef := fmt.Sprintf("%s%d", string('A'+counter), 1)
@@ -41,7 +41,7 @@ func GetAllHeaders(filePath string, sheetName string) (Columns, error) {
 	return result, nil
 }
 
-func GetHeaders(filePath string, sheetName string, colIds []int) (Columns, error) {
+func GetHeaders(filePath string, sheetName string, colIds []int) (Headers, error) {
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		logrus.Error(err)
@@ -55,7 +55,7 @@ func GetHeaders(filePath string, sheetName string, colIds []int) (Columns, error
 		}
 	}()
 
-	result := make(Columns)
+	result := make(Headers)
 
 	for col := range colIds {
 		cellRef := fmt.Sprintf("%s%d", string('A'+col), 1)

@@ -6,7 +6,10 @@ type ColumnParam struct {
 }
 
 // id столбца + имя
-type Columns map[int]string
+type Headers map[int]string
 
 // номер строки + набор данных
-type Row map[int]interface{}
+type Rows map[int]RowData
+
+// номер столбца + данные ячейки
+type RowData map[int]string
