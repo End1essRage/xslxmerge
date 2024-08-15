@@ -18,6 +18,33 @@ type ReadCommand struct {
 const emptyValue = "EMPTY"
 const startRow = 2
 
+func (c *ReadCommand) Read() ReadResult {
+	result := ReadResult{}
+
+	ids := make([]int, 0)
+	for _, val := range c.Params {
+		ids = append(ids, val.Id)
+	}
+
+	headers, err := GetHeaders(c.FilePath, c.SheetName, ids)
+	if err != nil {
+		result.Error = err
+		return result
+	}
+
+	result.Headers = headers
+
+	rows, err := c.ReadRowsSync()
+	if err != nil {
+		result.Error = err
+		return result
+	}
+
+	result.Rows = rows
+
+	return result
+}
+
 func (c *ReadCommand) ReadRows(ch chan<- Row, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(ch)
@@ -159,7 +186,6 @@ func (c *ReadCommand) sendRow(ch chan<- Row, filledCells map[string]string) {
 }
 
 func (c *ReadCommand) getRow(i int, filledCells map[string]string) Row {
-	//row := make(RowData)
 	row := Row{Id: i}
 	skip := false
 	for j := 0; j < len(c.Params); j++ {

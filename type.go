@@ -17,3 +17,9 @@ type Row struct {
 	Empty bool
 	Data  []Cell
 }
+
+type ReadResult struct {
+	Headers Headers
+	Rows    []Row
+	Error   error
+}
