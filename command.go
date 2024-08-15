@@ -18,7 +18,7 @@ type ReadCommand struct {
 const emptyValue = "EMPTY"
 const startRow = 2
 
-func (params *ReadCommand) ReadRows(ch chan<- Rows, wg *sync.WaitGroup) {
+func (params *ReadCommand) ReadRows(ch chan<- NewRow, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(ch)
 
@@ -39,7 +39,7 @@ func (params *ReadCommand) ReadRows(ch chan<- Rows, wg *sync.WaitGroup) {
 	params.sendRow(ch, filledCells)
 }
 
-func (params *ReadCommand) ReadRowsSync() ([]Rows, error) {
+func (params *ReadCommand) ReadRowsSync() (NewRows, error) {
 	f, err := excelize.OpenFile(params.FilePath)
 	if err != nil {
 		logrus.Error(err)
@@ -53,15 +53,16 @@ func (params *ReadCommand) ReadRowsSync() ([]Rows, error) {
 		}
 	}()
 
-	result := make([]Rows, 0)
+	result := make(NewRows, 0)
 
 	filledCells := params.fillCellsMap(f)
 	for i := startRow; i < params.EndRow; i++ {
-		row, err := params.getRow(i, filledCells)
-		if err != nil {
+		row := params.getRow(i, filledCells)
+		if row.Empty {
 			continue
 		}
-		result = append(result, Rows{i: row})
+
+		result = append(result, row)
 	}
 
 	if len(result) > 0 {
@@ -136,9 +137,9 @@ func (params *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
 	return filledCells
 }
 
-func (params *ReadCommand) sendRow(ch chan<- Rows, filledCells map[string]string) {
+func (params *ReadCommand) sendRow(ch chan<- NewRow, filledCells map[string]string) {
 	for i := startRow; i < params.EndRow; i++ {
-		row := make(RowData)
+		row := NewRow{Id: i}
 
 		skip := false
 		for j := 0; j < len(params.Params); j++ {
@@ -147,19 +148,19 @@ func (params *ReadCommand) sendRow(ch chan<- Rows, filledCells map[string]string
 			if params.Params[j].Required && filledCells[cellRef] == emptyValue {
 				skip = true
 			}
-
-			row[params.Params[j].Id] = filledCells[cellRef]
+			cell := NewCell{ColumnId: params.Params[j].Id, Data: filledCells[cellRef]}
+			row.Data = append(row.Data, cell)
 		}
 
 		if !skip {
-			ch <- Rows{i: row}
+			ch <- row
 		}
 	}
 }
 
-func (params *ReadCommand) getRow(i int, filledCells map[string]string) (RowData, error) {
-	row := make(RowData)
-
+func (params *ReadCommand) getRow(i int, filledCells map[string]string) NewRow {
+	//row := make(RowData)
+	row := NewRow{Id: i}
 	skip := false
 	for j := 0; j < len(params.Params); j++ {
 		cellRef := fmt.Sprintf("%s%d", string('A'+params.Params[j].Id), i)
@@ -167,13 +168,14 @@ func (params *ReadCommand) getRow(i int, filledCells map[string]string) (RowData
 		if params.Params[j].Required && filledCells[cellRef] == emptyValue {
 			skip = true
 		}
-
-		row[params.Params[j].Id] = filledCells[cellRef]
+		cell := NewCell{ColumnId: params.Params[j].Id, Data: filledCells[cellRef]}
+		row.Data = append(row.Data, cell)
 	}
 
 	if !skip {
-		return row, nil
+		return row
 	}
+	row.Empty = true
 
-	return nil, fmt.Errorf("row skipped")
+	return row
 }
