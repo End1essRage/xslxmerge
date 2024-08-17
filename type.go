@@ -1,4 +1,4 @@
-package xslxmerge
+package main
 
 type ColumnParam struct {
 	Id       int
