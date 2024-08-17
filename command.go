@@ -17,6 +17,7 @@ type ReadCommand struct {
 
 const emptyValue = "EMPTY"
 const startRow = 2
+const checkFirstStep = 10000
 
 func (c *ReadCommand) Read() ReadResult {
 	result := ReadResult{}
@@ -100,9 +101,12 @@ func (c *ReadCommand) ReadRowsSync() ([]Row, error) {
 }
 
 func (c *ReadCommand) findEndRow(file *excelize.File) int {
-	counter := startRow
-	end := false
+	empty := false
 	emptyCounter := 0
+	currentStep := checkFirstStep
+	counter := currentStep
+	lastEmpty := 0
+
 	for {
 		emptyCounter = 0
 		// TODO Необходимо переделать на если хотя бы в одной ячейке есть значение остальное пропускать
@@ -123,13 +127,31 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 			}
 
 			if emptyCounter == len(c.Params) {
-				end = true
+				empty = true
 			}
 		}
-		if end {
+
+		if empty {
+			if currentStep >= 4 {
+				currentStep /= 4
+			}
+			lastEmpty = counter
+			counter -= currentStep * 2
+		} else {
+			counter += currentStep
+		}
+
+		logrus.Info("Поиск последней строки : ")
+		logrus.Infof("last empty = %i \n counter = %i \n check step = %i", lastEmpty, counter, currentStep)
+
+		if counter == lastEmpty-1 {
+			break
+		}
+		/*if end {
 			break
 		}
 		counter++
+		*/
 	}
 
 	return counter
