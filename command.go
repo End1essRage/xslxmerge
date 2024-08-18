@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
@@ -17,7 +18,7 @@ type ReadCommand struct {
 
 const emptyValue = "EMPTY"
 const startRow = 2
-const checkFirstStep = 10000
+const checkFirstStep = 100000
 
 func (c *ReadCommand) Read() ReadResult {
 	result := ReadResult{}
@@ -105,12 +106,17 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 	emptyCounter := 0
 	currentStep := checkFirstStep
 	counter := currentStep
-	lastEmpty := 0
+	topFilled := 0
+	bottomEmpty := 0
+	params := len(c.Params)
+	iterationsCount := 0
 
 	for {
+		iterationsCount += 1
 		emptyCounter = 0
+
 		// TODO Необходимо переделать на если хотя бы в одной ячейке есть значение остальное пропускать
-		for j := 0; j < len(c.Params); j++ {
+		for j := 0; j < params; j++ {
 			cellRef := fmt.Sprintf("%s%d", string('A'+c.Params[j].Id), counter) // Определяем ссылку на ячейку
 
 			// Проверяем, есть ли значение в строке или нет
@@ -120,48 +126,53 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 			}
 
 			if cellValue != "" {
+				empty = false
 				break
 			} else {
 				emptyCounter++
 				cellValue = emptyValue
 			}
 
-			if emptyCounter == len(c.Params) {
-				empty = true
-			}
+			empty = emptyCounter == len(c.Params)
 		}
 
 		if empty {
-			if currentStep >= 4 {
-				currentStep /= 4
+			currentStep /= 2
+
+			if currentStep <= 2 {
+				currentStep = 1
 			}
-			lastEmpty = counter
-			counter -= currentStep * 2
+
+			bottomEmpty = counter
+			counter -= currentStep
+
 		} else {
+			topFilled = counter
+
 			counter += currentStep
 		}
 
 		logrus.Info("Поиск последней строки : ")
-		logrus.Infof("last empty = %i \n counter = %i \n check step = %i", lastEmpty, counter, currentStep)
+		logrus.Infof("last empty = %i \n filled = %i \n counter = %i \n check step = %i", bottomEmpty, topFilled, counter, currentStep)
 
-		if counter == lastEmpty-1 {
+		inRange := bottomEmpty - topFilled
+
+		if inRange <= 1 {
 			break
 		}
-		/*if end {
-			break
-		}
-		counter++
-		*/
+
+		time.Sleep(1 * time.Second)
 	}
-
-	return counter
+	logrus.Infof("iterations count is %i", iterationsCount)
+	logrus.Infof("last filled is %i", topFilled)
+	return topFilled
 }
 
 func (c *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
 	filledCells := make(map[string]string)
 
 	if c.EndRow == 0 {
-		c.EndRow = c.findEndRow(file)
+		c.EndRow = c.findEndRow(file) + 1
 	}
 
 	for i := startRow; i < c.EndRow; i++ {
