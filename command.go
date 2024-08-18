@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/xuri/excelize/v2"
@@ -152,20 +151,14 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 			counter += currentStep
 		}
 
-		logrus.Info("Поиск последней строки : ")
-		logrus.Infof("last empty = %i \n filled = %i \n counter = %i \n check step = %i", bottomEmpty, topFilled, counter, currentStep)
-
 		inRange := bottomEmpty - topFilled
 
 		if inRange <= 1 {
 			break
 		}
-
-		time.Sleep(1 * time.Second)
 	}
-	logrus.Infof("iterations count is %i", iterationsCount)
-	logrus.Infof("last filled is %i", topFilled)
-	return topFilled + 1
+
+	return topFilled
 }
 
 func (c *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
