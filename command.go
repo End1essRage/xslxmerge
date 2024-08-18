@@ -165,14 +165,14 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 	}
 	logrus.Infof("iterations count is %i", iterationsCount)
 	logrus.Infof("last filled is %i", topFilled)
-	return topFilled
+	return topFilled + 1
 }
 
 func (c *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
 	filledCells := make(map[string]string)
 
 	if c.EndRow == 0 {
-		c.EndRow = c.findEndRow(file) + 1
+		c.EndRow = c.findEndRow(file)
 	}
 
 	for i := startRow; i < c.EndRow; i++ {
