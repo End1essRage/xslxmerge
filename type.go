@@ -18,7 +18,7 @@ type Row struct {
 	Data  []Cell
 }
 
-type ReadResult struct {
+type ReadFullResult struct {
 	Headers Headers
 	Rows    []Row
 	Error   error

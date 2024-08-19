@@ -20,8 +20,8 @@ const emptyValue = "EMPTY"
 const startRow = 2
 const checkFirstStep = 100000
 
-func (c *ReadCommand) Read() ReadResult {
-	result := ReadResult{}
+func (c *ReadCommand) Read() ReadFullResult {
+	result := ReadFullResult{}
 
 	ids := make([]int, 0)
 	for _, val := range c.Params {
@@ -98,7 +98,7 @@ func (c *ReadCommand) ReadRowsSync() ([]Row, error) {
 		return result, nil
 	}
 
-	return result, fmt.Errorf("no rows")
+	return result, nil
 }
 
 func (c *ReadCommand) findEndRow(file *excelize.File) int {
