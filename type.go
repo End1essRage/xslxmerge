@@ -1,4 +1,4 @@
-package xslxmerge
+package main
 
 type ColumnParam struct {
 	Id       int
@@ -16,4 +16,10 @@ type Row struct {
 	Id    int
 	Empty bool
 	Data  []Cell
+}
+
+type ReadFullResult struct {
+	Headers Headers
+	Rows    []Row
+	Error   error
 }

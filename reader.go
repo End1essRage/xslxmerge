@@ -1,4 +1,4 @@
-package xslxmerge
+package main
 
 import (
 	"fmt"
