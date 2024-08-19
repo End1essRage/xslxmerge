@@ -20,9 +20,9 @@ func (f *ReadFascade) NewReadFull() (*ReadCommand, error) {
 		newParams = append(newParams, ColumnParam{Id: id})
 	}
 
-	return &ReadCommand{FilePath: f.filePath, SheetName: f.sheetName, Params: newParams, EndRow: 0}, nil
+	return &ReadCommand{filePath: f.filePath, sheetName: f.sheetName, params: newParams, endRow: 0}, nil
 }
 
 func (f *ReadFascade) NewReadWithParams(params []ColumnParam, endRow int) *ReadCommand {
-	return &ReadCommand{FilePath: f.filePath, SheetName: f.sheetName, Params: params, EndRow: endRow}
+	return &ReadCommand{filePath: f.filePath, sheetName: f.sheetName, params: params, endRow: endRow}
 }

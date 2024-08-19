@@ -9,10 +9,10 @@ import (
 )
 
 type ReadCommand struct {
-	SheetName string
-	FilePath  string
-	Params    []ColumnParam
-	EndRow    int
+	sheetName string
+	filePath  string
+	params    []ColumnParam
+	endRow    int
 }
 
 const emptyValue = "EMPTY"
@@ -23,11 +23,11 @@ func (c *ReadCommand) Read() ReadFullResult {
 	result := ReadFullResult{}
 
 	ids := make([]int, 0)
-	for _, val := range c.Params {
+	for _, val := range c.params {
 		ids = append(ids, val.Id)
 	}
 
-	headers, err := GetHeaders(c.FilePath, c.SheetName, ids)
+	headers, err := GetHeaders(c.filePath, c.sheetName, ids)
 	if err != nil {
 		result.Error = err
 		return result
@@ -50,7 +50,7 @@ func (c *ReadCommand) ReadRows(ch chan<- Row, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(ch)
 
-	f, err := excelize.OpenFile(c.FilePath)
+	f, err := excelize.OpenFile(c.filePath)
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -68,7 +68,7 @@ func (c *ReadCommand) ReadRows(ch chan<- Row, wg *sync.WaitGroup) {
 }
 
 func (c *ReadCommand) ReadRowsSync() ([]Row, error) {
-	f, err := excelize.OpenFile(c.FilePath)
+	f, err := excelize.OpenFile(c.filePath)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -84,7 +84,7 @@ func (c *ReadCommand) ReadRowsSync() ([]Row, error) {
 	result := make([]Row, 0)
 
 	filledCells := c.fillCellsMap(f)
-	for i := startRow; i < c.EndRow; i++ {
+	for i := startRow; i < c.endRow; i++ {
 		row := c.getRow(i, filledCells)
 		if row.Empty {
 			continue
@@ -107,7 +107,7 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 	counter := currentStep
 	topFilled := 0
 	bottomEmpty := 0
-	params := len(c.Params)
+	params := len(c.params)
 	iterationsCount := 0
 
 	for {
@@ -116,10 +116,10 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 
 		// TODO Необходимо переделать на если хотя бы в одной ячейке есть значение остальное пропускать
 		for j := 0; j < params; j++ {
-			cellRef := fmt.Sprintf("%s%d", string('A'+c.Params[j].Id), counter) // Определяем ссылку на ячейку
+			cellRef := fmt.Sprintf("%s%d", string('A'+c.params[j].Id), counter) // Определяем ссылку на ячейку
 
 			// Проверяем, есть ли значение в строке или нет
-			cellValue, err := file.GetCellValue(c.SheetName, cellRef)
+			cellValue, err := file.GetCellValue(c.sheetName, cellRef)
 			if err != nil {
 				cellValue = emptyValue
 			}
@@ -132,7 +132,7 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 				cellValue = emptyValue
 			}
 
-			empty = emptyCounter == len(c.Params)
+			empty = emptyCounter == len(c.params)
 		}
 
 		if empty {
@@ -164,16 +164,16 @@ func (c *ReadCommand) findEndRow(file *excelize.File) int {
 func (c *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
 	filledCells := make(map[string]string)
 
-	if c.EndRow == 0 {
-		c.EndRow = c.findEndRow(file)
+	if c.endRow == 0 {
+		c.endRow = c.findEndRow(file)
 	}
 
-	for i := startRow; i < c.EndRow; i++ {
-		for j := 0; j < len(c.Params); j++ {
-			cellRef := fmt.Sprintf("%s%d", string('A'+c.Params[j].Id), i) // Определяем ссылку на ячейку
+	for i := startRow; i < c.endRow; i++ {
+		for j := 0; j < len(c.params); j++ {
+			cellRef := fmt.Sprintf("%s%d", string('A'+c.params[j].Id), i) // Определяем ссылку на ячейку
 
 			// Проверяем, есть ли значение в строке или нет
-			cellValue, err := file.GetCellValue(c.SheetName, cellRef)
+			cellValue, err := file.GetCellValue(c.sheetName, cellRef)
 			if err != nil {
 				cellValue = emptyValue
 			}
@@ -191,17 +191,17 @@ func (c *ReadCommand) fillCellsMap(file *excelize.File) map[string]string {
 }
 
 func (c *ReadCommand) sendRow(ch chan<- Row, filledCells map[string]string) {
-	for i := startRow; i < c.EndRow; i++ {
+	for i := startRow; i < c.endRow; i++ {
 		row := Row{Id: i}
 
 		skip := false
-		for j := 0; j < len(c.Params); j++ {
-			cellRef := fmt.Sprintf("%s%d", string('A'+c.Params[j].Id), i)
+		for j := 0; j < len(c.params); j++ {
+			cellRef := fmt.Sprintf("%s%d", string('A'+c.params[j].Id), i)
 
-			if c.Params[j].Required && filledCells[cellRef] == emptyValue {
+			if c.params[j].Required && filledCells[cellRef] == emptyValue {
 				skip = true
 			}
-			cell := Cell{ColumnId: c.Params[j].Id, Data: filledCells[cellRef]}
+			cell := Cell{ColumnId: c.params[j].Id, Data: filledCells[cellRef]}
 			row.Data = append(row.Data, cell)
 		}
 
@@ -214,13 +214,13 @@ func (c *ReadCommand) sendRow(ch chan<- Row, filledCells map[string]string) {
 func (c *ReadCommand) getRow(i int, filledCells map[string]string) Row {
 	row := Row{Id: i}
 	skip := false
-	for j := 0; j < len(c.Params); j++ {
-		cellRef := fmt.Sprintf("%s%d", string('A'+c.Params[j].Id), i)
+	for j := 0; j < len(c.params); j++ {
+		cellRef := fmt.Sprintf("%s%d", string('A'+c.params[j].Id), i)
 
-		if c.Params[j].Required && filledCells[cellRef] == emptyValue {
+		if c.params[j].Required && filledCells[cellRef] == emptyValue {
 			skip = true
 		}
-		cell := Cell{ColumnId: c.Params[j].Id, Data: filledCells[cellRef]}
+		cell := Cell{ColumnId: c.params[j].Id, Data: filledCells[cellRef]}
 		row.Data = append(row.Data, cell)
 	}
 
